@@ -16,18 +16,22 @@ def setup(busnum=None):
 		for line in open('config'):
 			if line[0:8] == 'offset_x':
 				offset_x = int(line[11:-1])
+                                print('Offset x: {}'.format(offset_x))
+                                print('Line: {}'.format(line))
 				#print 'offset_x =', offset_x
 			if line[0:8] == 'offset_y':
 				offset_y = int(line[11:-1])
+                                print('Offset y: {}'.format(offset_y))
+                                print('Line: {}'.format(line))
 				#print 'offset_y =', offset_y
 	except:
 		pass
-	Xmin = MinPulse + offset_x
-	Xmax = MaxPulse + offset_x
-	Ymin = MinPulse + offset_y
-	Ymax = MaxPulse + offset_y
-	home_x = (Xmax + Xmin)/2
-	home_y = Ymin + 80
+	Xmin = MinPulse
+	Xmax = MaxPulse
+	Ymin = MinPulse
+	Ymax = MaxPulse
+	home_x = (Xmax + Xmin) / 2 + offset_x
+	home_y = (Ymax + Ymin) / 2 + offset_y
 	if busnum == None:
 		pwm = servo.PWM()                  # Initialize the servo controller.
 	else:
@@ -83,10 +87,12 @@ def home_x_y():
 	global Current_x
 	Current_y = home_y 
 	Current_x = home_x
+        print('Writing {},{} to pwm'.format(Current_x, Current_y))
 	pwm.write(14, 0, Current_x)
 	pwm.write(15, 0, Current_y)
 
 def calibrate(x,y):
+        print('Writing {},{} to pwm'.format(x, y))
 	pwm.write(14, 0, (MaxPulse+MinPulse)/2+x)
 	pwm.write(15, 0, (MaxPulse+MinPulse)/2+y)
 

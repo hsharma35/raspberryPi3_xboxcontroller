@@ -101,7 +101,7 @@ while True:
 			spd = data[8:]
 			try:
 				spd = int(spd)
-				motor.forward(spd)
+				motor.forwardWithSpeed(spd)
 			except:
 				print 'Error speed =', spd
                 elif data[0:9] == 'backward=':
@@ -109,7 +109,7 @@ while True:
                         spd = data.split('=')[1]
 			try:
 				spd = int(spd)
-	                        motor.backward(spd)
+	                        motor.backwardWithSpeed(spd)
 			except:
 				print 'ERROR, speed =', spd
 
