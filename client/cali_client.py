@@ -3,11 +3,13 @@
 from Tkinter import *
 from socket import *      # Import necessary modules
 import os
+import dweepy
 
 top = Tk()   # Create a top window
 top.title('Raspberry Pi Smart Video Car Calibration')
 
-HOST = '192.168.0.159'    # Server(Raspberry Pi) IP address
+# Server(Raspberry Pi) IP address
+HOST = dweepy.get_latest_dweet_for('hsharma35-rpi3')[0]['content']['ip']
 PORT = 21567
 BUFSIZ = 1024             # buffer size
 ADDR = (HOST, PORT)

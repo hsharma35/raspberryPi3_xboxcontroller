@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 from Tkinter import *
 from socket import *      # Import necessary modules
+import dweepy
 
 ctrl_cmd = ['forward', 'backward', 'left', 'right', 'stop', 'read cpu_temp', 'home', 'distance', 'x+', 'x-', 'y+', 'y-', 'xy_home']
 
 top = Tk()   # Create a top window
 top.title('Sunfounder Raspberry Pi Smart Video Car')
 
-HOST = '192.168.0.147'    # Server(Raspberry Pi) IP address
+
+# Server(Raspberry Pi) IP address
+HOST = dweepy.get_latest_dweet_for('hsharma35-rpi3')[0]['content']['ip']
 PORT = 21567
-BUFSIZ = 1024             # buffer size
 ADDR = (HOST, PORT)
 
 tcpCliSock = socket(AF_INET, SOCK_STREAM)   # Create a socket
@@ -76,12 +78,12 @@ def quit_fun(event):
 # =============================================================================
 # Create buttons
 # =============================================================================
-Btn0 = Button(top, width=5, text='Forward')
-Btn1 = Button(top, width=5, text='Backward')
-Btn2 = Button(top, width=5, text='Left')
-Btn3 = Button(top, width=5, text='Right')
-Btn4 = Button(top, width=5, text='Quit')
-Btn5 = Button(top, width=5, height=2, text='Home')
+Btn0 = Button(top, width=8, text='Forward')
+Btn1 = Button(top, width=8, text='Backward')
+Btn2 = Button(top, width=8, text='Left')
+Btn3 = Button(top, width=8, text='Right')
+Btn4 = Button(top, width=8, text='Quit')
+Btn5 = Button(top, width=8, height=2, text='Home')
 
 # =============================================================================
 # Buttons layout
@@ -110,11 +112,11 @@ Btn5.bind('<ButtonRelease-1>', home_fun)
 # =============================================================================
 # Create buttons
 # =============================================================================
-Btn07 = Button(top, width=5, text='X+', bg='red')
-Btn08 = Button(top, width=5, text='X-', bg='red')
-Btn09 = Button(top, width=5, text='Y-', bg='red')
-Btn10 = Button(top, width=5, text='Y+', bg='red')
-Btn11 = Button(top, width=5, height=2, text='HOME', bg='red')
+Btn07 = Button(top, width=8, text='X+', bg='red')
+Btn08 = Button(top, width=8, text='X-', bg='red')
+Btn09 = Button(top, width=8, text='Y-', bg='red')
+Btn10 = Button(top, width=8, text='Y+', bg='red')
+Btn11 = Button(top, width=8, height=2, text='HOME', bg='red')
 
 # =============================================================================
 # Buttons layout
