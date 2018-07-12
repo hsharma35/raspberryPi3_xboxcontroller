@@ -101,8 +101,12 @@ class Controller(object):
             dead_zone: The size of dead zone for the analog sticks (default 0.15)
         """
 
-        self.joystick = pygame.joystick.Joystick(id)
-        self.joystick.init()
+        try:
+            self.joystick = pygame.joystick.Joystick(id)
+            self.joystick.init()
+        except:
+            self.joystick = None
+            raise AttributeError, 'Joystick with id {} not found'.format(id)
         self.dead_zone = dead_zone
 
         # Linux and Mac triggers behave funny. See get_triggers().
