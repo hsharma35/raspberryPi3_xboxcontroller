@@ -6,17 +6,19 @@ import cv2
 import time
 import numpy as np
 
+import imutils.video
+
 class InferenceClient(object):
     def __init__(self, host_ip='143.215.111.138', host_port=8080):
     # def __init__(self, host_ip, host_port):
         self.host_ip = host_ip
         self.host_port = host_port
 
-        self.fps = None
+        self.fps = imutils.video.FPS().start()
         self.prev_time = None
-        self.incoming_img_q = Queue(maxsize=10)
-        self.outgoing_img_q = Queue(maxsize=100)
-        self.outgoing_det_q = Queue(maxsize=10)
+        self.incoming_img_q = Queue(maxsize=1)
+        self.outgoing_img_q = Queue(maxsize=1)
+        self.outgoing_det_q = Queue(maxsize=1)
 
         self.detection_count = 0
 
@@ -28,13 +30,11 @@ class InferenceClient(object):
 
         self.detection_enabled = True
 
-        options = {"model": "cfg/tiny-yolo-voc.cfg", "load": "bin/tiny-yolo-voc.weights", "threshold": 0.2}
+        options = {"model": "cfg/tiny-yolo-voc.cfg", "load": "bin/tiny-yolo-voc.weights", "threshold": 0.1}
         self.tfnet = TFNet(options)
 
         url = 'http://{}:{}/?action=stream'.format(self.host_ip, self.host_port)
         self.cap = cv2.VideoCapture(url)
-
-        self.lag = 0
 
     def start_worker(self):
         self.image_fetcher.start()
@@ -71,32 +71,15 @@ class InferenceClient(object):
             if self.prev_time is None:
                 self.prev_time = time.time()
             img, start = self.incoming_img_q.get(False)
-            curr_time = time.time()
-            self.lag = curr_time - start
             if self.detection_enabled:
                 det = self.get_det(img)
-                # self.outgoing_det_q.put(det, False)
+                self.outgoing_det_q.put(det, False)
                 self.detection_count += 1
-            if self.fps is None:
-                self.fps = 1 / (curr_time - self.prev_time)
-            else:
-                self.fps = 0.8 * self.fps + 0.2 / (curr_time - self.prev_time)
-            self.prev_time = curr_time
+            self.fps.update()
+            self.fps.stop()
 
 
 if __name__ == "__main__":
-
-    # host_ip = '143.215.111.138'
-    # host_port = 8080
-    # url = 'http://{}:{}/?action=stream'.format(host_ip, host_port)
-    # cap = cv2.VideoCapture(url)
-    # while True:
-        # ret, frame = cap.read()
-        # cv2.imshow('Video', frame)
-        # if cv2.waitKey(1) == 27:
-            # exit(0)
-
-
     i_client = InferenceClient()
     i_client.start_worker()
     while True:
@@ -104,11 +87,20 @@ if __name__ == "__main__":
         if not i_client.outgoing_img_q.empty():
             img, image_time = i_client.outgoing_img_q.get()
             print('lag: {}'.format(time.time() - image_time))
+            if not i_client.outgoing_det_q.empty():
+                det = i_client.outgoing_det_q.get()
+                if len(det) > 0:
+                    for d in det:
+                        label, l, r, t, b = d
+                        cv2.rectangle(img, (l, b), (r, t), (0,255,0), 2)
+                        font = cv2.FONT_HERSHEY_SIMPLEX
+                        cv2.putText(img,label,(l,b), font, 1,(255,255,255),2,cv2.LINE_AA)
             cv2.imshow('Video', img)
-            print('Frames per second: {}'.format(i_client.fps))
+            try:
+                print('Frames per second: {}'.format(i_client.fps.fps()))
+            except:
+                pass
             if cv2.waitKey(1) == 27:
                 exit(0)
-            # time.sleep(0.2)
+            # time.sleep(0.1)
 
-        if not i_client.outgoing_det_q.empty():
-            det = i_client.outgoing_det_q.get()

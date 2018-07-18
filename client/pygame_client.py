@@ -20,6 +20,8 @@ from darkflow.net.build import TFNet
 from Queue import Queue, Empty
 from threading import Thread
 
+from inference_client import InferenceClient
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 65, 65)
@@ -28,63 +30,8 @@ BLUE = (65, 65, 255)
 AMBER = (255, 175, 0)
 GREY = (175, 175, 175)
 
-FPS = 20
+FPS = 60
 clock = pygame.time.Clock()
-
-class InferenceClient(object):
-    def __init__(self, host_ip, host_port):
-        self.host_ip = host_ip
-        self.host_port = host_port
-
-        self.fps = 0
-        self.incoming_img_q = Queue(maxsize=2)
-        self.outgoing_det_q = Queue(maxsize=2)
-        self.outgoing_img_q = Queue(maxsize=2)
-
-        self.image_fetcher = Thread(target=self._image_fetcher)
-        self.image_fetcher.setDaemon(True)
-
-        self.inference_engine = Thread(target=self.put_image_and_bbox)
-        self.inference_engine.setDaemon(True)
-
-        options = {"model": "cfg/tiny-yolo-voc.cfg", "load": "bin/tiny-yolo-voc.weights", "threshold": 0.2}
-        self.tfnet = TFNet(options)
-
-    def start_worker(self):
-        self.image_fetcher.start()
-        self.inference_engine.start()
-
-    def _image_fetcher(self):
-        while True:
-            while self.incoming_img_q.full():
-                time.sleep(0.01)
-            r = requests.get('http://{}:8998/image.jpg'.format(self.host_ip)) # replace with your ip address
-            curr_img = Image.open(BytesIO(r.content))
-            self.incoming_img_q.put(curr_img, False)
-
-    def get_det(self, image):
-        curr_img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        result = self.tfnet.return_predict(curr_img_cv2)
-        out = []
-        for det in result:
-            l = det['topleft']['x']
-            r = det['bottomright']['x']
-            t = det['topleft']['y']
-            b = det['bottomright']['y']
-            out.append((det['label'], l,r,t,b))
-        return out
-
-    def put_image_and_bbox(self):
-        while True:
-            while self.incoming_img_q.empty() or self.outgoing_det_q.full() or self.outgoing_img_q.full():
-                time.sleep(0.01)
-            img = self.incoming_img_q.get(False)
-            det = self.get_det(img)
-            self.outgoing_img_q.put(img, False)
-            self.outgoing_det_q.put(det, False)
-
-    def get_image_bbox(self):
-        self.queue.get()
 
 def display_text(screen, text, x, y):
     my_font = pygame.font.Font(None, 30)
@@ -102,7 +49,7 @@ def main(debug):
 
     frame = None
 
-    infer = InferenceClient(controller.host_ip, 8998)
+    infer = InferenceClient(controller.host_ip, 8080)
     infer.start_worker()
     xmax, ymax = 640, 480
     while not done:
@@ -145,8 +92,9 @@ def main(debug):
         # drawing
         screen.fill(BLACK)
 
+        lag = 0
         if not infer.outgoing_img_q.empty():
-            curr_img = infer.outgoing_img_q.get()
+            curr_img, push_time = infer.outgoing_img_q.get()
             frame = np.rot90(curr_img)
             frame = pygame.surfarray.make_surface(frame)
 
@@ -158,7 +106,7 @@ def main(debug):
             for b in bbox:
                 label, l,r,t,b = b
                 l = xmax - l
-                r - xmax - r
+                r = xmax - r
                 pygame.draw.line(screen, GREEN, [l, t], [l, b], 2)
                 pygame.draw.line(screen, GREEN, [l, b], [r, b], 2)
                 pygame.draw.line(screen, GREEN, [r, b], [r, t], 2)
@@ -296,6 +244,8 @@ def main(debug):
         mag, angle, fwd = controller.get_car_motion()
         display_text(screen, "Mag: {}".format(mag), x + 275, y + 250)
         display_text(screen, "Angle: {}".format(angle), x + 275, y + 275)
+        lag = time.time() - push_time
+        display_text(screen, "Lag: {}".format(lag), x + 275, y + 300)
 
         pygame.display.flip()
 
