@@ -26,7 +26,8 @@ motor.setup(busnum=busnum)     # Initialize the Raspberry Pi GPIO connected to t
 video_dir.home_x_y()
 car_dir.home()
 
-while True:
+try:
+    while True:
 	print 'Waiting for connection...'
 	# Waiting for connection. Once receiving a connection, the function accept() returns a separate 
 	# client socket for the subsequent communication. By default, the function accept() is a blocking 
@@ -116,6 +117,9 @@ while True:
 		else:
 			print 'Command Error! Cannot recognize command: ' + data
 
-tcpSerSock.close()
+except KeyboardInterrupt:
+    print('Got keyboard interrupt')
+    print('...closing socket connection')
+    tcpSerSock.close()
 
 
